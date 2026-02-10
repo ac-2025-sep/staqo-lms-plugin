@@ -1,0 +1,2 @@
+recursive-include create_bulk_user/patches *
+recursive-include create_bulk_user/templates *
