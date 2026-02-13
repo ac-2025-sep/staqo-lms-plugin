@@ -10,9 +10,17 @@ hooks.Filters.ENV_PATCHES.add_item(
 "ENABLE_CHANGE_USER_PASSWORD_ADMIN": true 
 "SHOW_REGISTRATION_LINKS" : false 
 "DEFAULT_COURSE_VISIBILITY_IN_CATALOG": "none"
+"COURSES_ARE_BROWSABLE": true
+"CERTIFICATES_HTML_VIEW": true
+"CUSTOM_CERTIFICATE_TEMPLATES_ENABLED": true
+"ENABLE_ENTERPRISE_INTEGRATION": true
 """
     )
 )
+
+
+# DISABLE_UNENROLLMENT
+
 
 from tutor import hooks
 
@@ -42,6 +50,35 @@ INSTALLED_APPS += [
 )
 
 
+from tutormfe.hooks import PLUGIN_SLOTS
+
+PLUGIN_SLOTS.add_items([
+    (
+        "learner-dashboard",
+        "desktop_user_menu_slot",
+        """
+        {
+          op: PLUGIN_OPERATIONS.Insert,
+          widget: {
+            id: 'add_user_link_desktop',
+            type: DIRECT_PLUGIN,
+            RenderWidget: () => {
+              const cfg = (globalThis?.getConfig?.() || {});
+              const fallbackLms = 'https://edx.mysleepwell.com';
+              const base = (cfg.LMS_BASE_URL || fallbackLms).replace(/\\/$/, '');
+              const url = `${base}/admin/auth/user/`;
+
+              return (
+                <a className="dropdown-item" href={url}>
+                  Add User
+                </a>
+              );
+            },
+          },
+        }
+        """
+    ),
+])
 
 
 
