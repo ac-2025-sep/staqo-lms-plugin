@@ -31,9 +31,35 @@ hooks.Filters.ENV_PATCHES.add_item(
 # Bulk user import dependencies
 RUN pip install --no-cache-dir django-import-export==4.4.0
 RUN pip install --no-cache-dir git+https://github.com/ac-2025-sep/bulk_user_import.git
+RUN pip install --no-cache-dir git+https://github.com/ac-2025-sep/lms-batch-enrollment.git
+
 """
     )
 )
+
+
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "openedx-common-settings",
+        """
+# Default course mode for newly created courses (Studio/CMS + LMS)
+COURSE_MODE_DEFAULTS = {
+    "name": "Honor",
+    "slug": "honor",
+    "min_price": 0,
+    "currency": "usd",
+    "suggested_prices": "",
+    "bulk_sku": None,
+    "sku": None,
+    "description": None,
+    "expiration_datetime": None,
+    "android_sku": None,
+    "ios_sku": None,
+}
+""",
+    )
+)
+
 
 
 hooks.Filters.ENV_PATCHES.add_item(
@@ -56,21 +82,21 @@ PLUGIN_SLOTS.add_items([
     (
         "learner-dashboard",
         "desktop_user_menu_slot",
-        """
+        r"""
         {
           op: PLUGIN_OPERATIONS.Insert,
           widget: {
             id: 'add_user_link_desktop',
             type: DIRECT_PLUGIN,
             RenderWidget: () => {
-              const cfg = (globalThis?.getConfig?.() || {});
-              const fallbackLms = 'https://edx.mysleepwell.com';
-              const base = (cfg.LMS_BASE_URL || fallbackLms).replace(/\\/$/, '');
-              const url = `${base}/admin/auth/user/`;
+                const base = window.location.origin
+                        .replace('apps.', '')
+                        .replace(/\/$/, '');
 
+                    const url = `${base}/userops/`;
               return (
                 <a className="dropdown-item" href={url}>
-                  Add User
+                  Admin Dashboard
                 </a>
               );
             },
@@ -80,7 +106,18 @@ PLUGIN_SLOTS.add_items([
     ),
 ])
 
-
+PLUGIN_SLOTS.add_items([
+    # Hide the default footer
+    (
+        "authoring",
+        "footer_slot",
+        """
+        {
+          op: PLUGIN_OPERATIONS.Hide,
+          widgetId: 'default_contents',
+        }"""
+    ),
+])
 
 
 
