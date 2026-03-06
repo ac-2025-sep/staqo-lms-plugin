@@ -70,7 +70,6 @@ hooks.Filters.ENV_PATCHES.add_item(
 INSTALLED_APPS += [
     "import_export",
     "bulk_user_import",
-    "userops",
 ]
 """,
     )
