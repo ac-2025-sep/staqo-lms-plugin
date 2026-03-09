@@ -14,6 +14,8 @@ hooks.Filters.ENV_PATCHES.add_item(
 "CERTIFICATES_HTML_VIEW": true
 "CUSTOM_CERTIFICATE_TEMPLATES_ENABLED": true
 "ENABLE_ENTERPRISE_INTEGRATION": true
+
+
 """
     )
 )
@@ -119,15 +121,29 @@ PLUGIN_SLOTS.add_items([
     ),
 ])
 
-
-
-
-
-
-
-
-
-
+hooks.Filters.ENV_PATCHES.add_item(
+    (
+        "openedx-dockerfile-post-git-checkout",
+        r'''
+RUN sed -i '/^DEFAULT_GRADING_POLICY = {$/,/^}$/c\
+DEFAULT_GRADING_POLICY = {\
+    "GRADER": [\
+        {\
+            "type": "Quiz",\
+            "short_label": "Quiz",\
+            "min_count": 1,\
+            "drop_count": 0,\
+            "weight": 1.0,\
+        }\
+    ],\
+    "GRADE_CUTOFFS": {\
+        "Pass": 0.5,\
+    },\
+}\
+' /openedx/edx-platform/xmodule/course_metadata_utils.py
+'''
+    )
+)
 
 
 
