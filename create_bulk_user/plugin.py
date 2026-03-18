@@ -20,6 +20,27 @@ hooks.Filters.ENV_PATCHES.add_item(
     )
 )
 
+# hooks.Filters.CONFIG_OVERRIDES.add_items([
+#     ("DEFAULT_COURSE_VISIBILITY_IN_CATALOG", "none"),
+# ])
+
+from tutor import hooks
+
+hooks.Filters.ENV_PATCHES.add_items([
+    (
+        "openedx-cms-common-settings",
+        """
+DEFAULT_COURSE_VISIBILITY_IN_CATALOG = "none"
+"""
+    ),
+    (
+        "openedx-lms-common-settings",
+        """
+DEFAULT_COURSE_VISIBILITY_IN_CATALOG = "none"
+"""
+    ),
+])
+
 
 # DISABLE_UNENROLLMENT
 
@@ -34,7 +55,7 @@ hooks.Filters.ENV_PATCHES.add_item(
 RUN pip install --no-cache-dir django-import-export==4.4.0
 RUN pip install --no-cache-dir git+https://github.com/ac-2025-sep/bulk_user_import.git
 RUN pip install --no-cache-dir git+https://github.com/ac-2025-sep/lms-batch-enrollment.git
-
+RUN pip install --no-cache-dir git+https://github.com/ac-2025-sep/lms-report.git
 """
     )
 )
@@ -72,6 +93,7 @@ hooks.Filters.ENV_PATCHES.add_item(
 INSTALLED_APPS += [
     "import_export",
     "bulk_user_import",
+    "userops_reports"
 ]
 """,
     )
@@ -79,7 +101,65 @@ INSTALLED_APPS += [
 
 
 from tutormfe.hooks import PLUGIN_SLOTS
+# Add link to bulk user import admin page in the user menu dropdown in the LMS and Studio
+# PLUGIN_SLOTS.add_items([
+#     (
+#         "all",
+#         "desktop_user_menu_slot",
+#         r"""
+#         {
+#           op: PLUGIN_OPERATIONS.Insert,
+#           widget: {
+#             id: 'add_user_link_desktop',
+#             type: DIRECT_PLUGIN,
+#             RenderWidget: () => {
+#                 const base = window.location.origin
+#                         .replace('apps.', '')
+#                         .replace(/\/$/, '');
 
+#                     const url = `${base}/userops/`;
+#               return (
+#                 <a className="dropdown-item" href={url}>
+#                   Admin Dashboard
+#                 </a>
+#               );
+#             },
+#           },
+#         }
+#         """
+#     ),
+# ])
+
+# PLUGIN_SLOTS.add_items([
+#     (
+#         "all",
+#         "learning_user_menu_slot",
+#         r"""
+#         {
+#           op: PLUGIN_OPERATIONS.Insert,
+#           widget: {
+#             id: 'add_user_link_studio',
+#             type: DIRECT_PLUGIN,
+#             RenderWidget: () => {
+#               const base = window.location.origin
+#                 .replace('apps.', '')
+#                 .replace(/\/$/, '');
+
+#               const url = `${base}/userops/`;
+
+#               return (
+#                 <a className="dropdown-item" href={url}>
+#                   Admin Dashboard
+#                 </a>
+#               );
+#             },
+#           },
+#         }
+#         """
+#     ),
+# ])
+
+#studio button in learner dashboard menu
 PLUGIN_SLOTS.add_items([
     (
         "learner-dashboard",
@@ -92,13 +172,12 @@ PLUGIN_SLOTS.add_items([
             type: DIRECT_PLUGIN,
             RenderWidget: () => {
                 const base = window.location.origin
-                        .replace('apps.', '')
+                        .replace('apps.', 'studio.')
                         .replace(/\/$/, '');
-
-                    const url = `${base}/userops/`;
+                    const url = `${base}/`;
               return (
                 <a className="dropdown-item" href={url}>
-                  Admin Dashboard
+                  Course Authoring
                 </a>
               );
             },
@@ -108,11 +187,85 @@ PLUGIN_SLOTS.add_items([
     ),
 ])
 
+# ## admin dashboard button in studio header
+# PLUGIN_SLOTS.add_items([
+#     (
+#         "authoring",
+#         "org.openedx.frontend.layout.studio_header_search_button_slot.v1",
+#         r"""
+#         {
+#           op: PLUGIN_OPERATIONS.Insert,
+#           widget: {
+#             id: 'studio-admin-dashboard-button',
+#             type: DIRECT_PLUGIN,
+#             RenderWidget: () => {
+#               const base = window.location.origin
+#                 .replace('apps.', '')
+#                 .replace(/\/$/, '');
+
+#               return (
+#                 <a className="btn btn-outline-primary ms-2" href={`${base}/userops/`}>
+#                   Admin Dashboard
+#                 </a>
+#               );
+#             },
+#           },
+#         }
+#         """
+#     ),
+# ])
+from tutormfe.hooks import PLUGIN_SLOTS
+
+PLUGIN_SLOTS.add_items([
+    (
+        "authoring",
+        "org.openedx.frontend.layout.studio_header_search_button_slot.v1",
+        r"""
+        {
+          op: PLUGIN_OPERATIONS.Insert,
+          widget: {
+            id: 'studio-admin-buttons',
+            type: DIRECT_PLUGIN,
+            RenderWidget: () => {
+              const base = window.location.origin
+                .replace('apps.', '')
+                .replace('studio.', '')
+                .replace(/\/$/, '');
+
+              return (
+                <div className="d-flex align-items-center gap-2 ms-2">
+
+                  <a
+                    className="btn btn-outline-primary"
+                    href="https://demodms.staqo.com/lmsreport/reportui6"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Report Dashboard
+                  </a>
+
+                  <a
+                    className="btn btn-outline-primary"
+                    href={`${base}/userops/`}
+                  >
+                    Bulk Enroll
+                  </a>
+
+                </div>
+              );
+            },
+          },
+        }
+        """
+    ),
+])
+
+
 PLUGIN_SLOTS.add_items([
     # Hide the default footer
     (
         "authoring",
-        "footer_slot",
+        "org.openedx.frontend.layout.studio_footer.v1",
         """
         {
           op: PLUGIN_OPERATIONS.Hide,
@@ -121,6 +274,9 @@ PLUGIN_SLOTS.add_items([
     ),
 ])
 
+
+
+#default grading policy simplified default 
 hooks.Filters.ENV_PATCHES.add_item(
     (
         "openedx-dockerfile-post-git-checkout",
@@ -146,14 +302,164 @@ DEFAULT_GRADING_POLICY = {\
 )
 
 
+## Add "Completed" badge to course cards in learner dashboard for completed courses
+PLUGIN_SLOTS.add_items([
+    (
+        "learner-dashboard",
+        "course_card_action_slot",
+        r"""
+        {
+          op: PLUGIN_OPERATIONS.Insert,
+          widget: {
+            id: "completed-badge-course-card",
+            type: DIRECT_PLUGIN,
+            RenderWidget: class CompletedBadge extends React.Component {
+              constructor(props) {
+                super(props);
+                this.state = {
+                  checked: false,
+                  isComplete: false,
+                };
+              }
 
+              extractCourseIdFromCard(cardId) {
+                try {
+                  const cardRoot = document.getElementById(cardId);
+                  if (!cardRoot) {
+                    console.warn("Completed badge: card root not found", cardId);
+                    return null;
+                  }
 
+                  const courseLink = cardRoot.querySelector('a[href*="/learning/course/"]');
+                  if (!courseLink) {
+                    console.warn("Completed badge: course link not found inside card", cardId);
+                    return null;
+                  }
 
+                  const href = courseLink.getAttribute("href") || "";
+                  const match = href.match(/course\/(course-v1:[^/]+)/);
 
+                  if (match && match[1]) {
+                    return decodeURIComponent(match[1]);
+                  }
 
+                  return null;
+                } catch (err) {
+                  console.error("Completed badge: failed extracting course id", err);
+                  return null;
+                }
+              }
 
+              changeResumeButtonStyle(cardId) {
+                try {
+                  const cardRoot = document.getElementById(cardId);
+                  if (!cardRoot) return;
 
+                  const resumeBtn = cardRoot.querySelector("a.btn-primary");
 
+                  if (resumeBtn) {
+                    resumeBtn.classList.remove("btn-primary");
+                    resumeBtn.classList.add("btn-secondary");
+                  }
+                } catch (err) {
+                  console.error("Completed badge: failed modifying button style", err);
+                }
+              }
+
+              componentDidMount() {
+                try {
+                  const cardId = this.props?.cardId;
+                  const courseId = this.extractCourseIdFromCard(cardId);
+
+                  if (!courseId) {
+                    this.setState({ checked: true, isComplete: false });
+                    return;
+                  }
+
+                  const lmsBaseUrl = window.location.origin.includes("://apps.")
+                    ? window.location.origin.replace("://apps.", "://")
+                    : window.location.origin;
+
+                  const url = `${lmsBaseUrl}/api/course_home/progress/${encodeURIComponent(courseId)}`;
+
+                  fetch(url, {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  })
+                    .then((res) => {
+                      if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                      }
+                      return res.json();
+                    })
+                    .then((data) => {
+                      const summary = data?.completion_summary || {};
+                      const gradePercent = Number(data?.course_grade?.percent ?? 0);
+
+                      const isCompleted =
+                        (
+                          Number(summary.complete_count || 0) > 0 &&
+                          Number(summary.incomplete_count || 0) === 0
+                        ) ||
+                        gradePercent >= 1;
+
+                      if (isCompleted) {
+                        this.changeResumeButtonStyle(cardId);
+                      }
+
+                      this.setState({
+                        checked: true,
+                        isComplete: isCompleted,
+                      });
+                    })
+                    .catch((err) => {
+                      console.error("Completed badge fetch failed", err);
+                      this.setState({
+                        checked: true,
+                        isComplete: false,
+                      });
+                    });
+                } catch (err) {
+                  console.error("Completed badge crashed", err);
+                  this.setState({
+                    checked: true,
+                    isComplete: false,
+                  });
+                }
+              }
+
+              render() {
+                if (!this.state.checked || !this.state.isComplete) {
+                  return null;
+                }
+
+                return (
+                  <div>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "4px 10px",
+                        borderRadius: "8px",
+                        backgroundColor: "#198754",
+                        color: "#fff",
+                        fontSize: "16px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Completed
+                    </span>
+                  </div>
+                );
+              }
+            },
+          },
+        }
+        """
+    ),
+])
 
 
 
