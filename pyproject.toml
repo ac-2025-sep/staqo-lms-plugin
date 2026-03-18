@@ -27,7 +27,7 @@ classifiers = [
 
 ]
 dependencies = [
-    "tutor>=20.0.0,<21.0.0",
+    "tutor>=20.0.0",
 ]
 
 # These fields will be set by hatch_build.py
