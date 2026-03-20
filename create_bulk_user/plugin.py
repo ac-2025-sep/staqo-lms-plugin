@@ -233,7 +233,7 @@ PLUGIN_SLOTS.add_items([
                 .replace(/\/$/, '');
 
               return (
-                <div className="d-flex align-items-center gap-2 ms-2">
+                <div className="d-flex align-items-center  ms-2" style={{ gap: '10px' }}>
 
                   <a
                     className="btn btn-outline-primary"
